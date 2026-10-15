@@ -9,7 +9,8 @@
   const PERFECT = 5;               // допуск «идеально», px
   const SPONGE = ['#e88da6', '#8a5a44', '#f0c879', '#8fcfa8', '#a88fe0'];
   const CREAM = '#fff5e8';
-  const SCORE_URL = '';            // сюда адрес сервера бота (см. submitScore)
+  // функция Supabase, которая отправляет очки в Telegram (setGameScore)
+  const SCORE_URL = 'https://zcxqkiptapiuouuhmqej.supabase.co/functions/v1/score';
 
   const cv = document.getElementById('game');
   const ctx = cv.getContext('2d');
@@ -114,15 +115,24 @@
     submitScore(score);
   }
 
-  // Отправка очков на сервер бота. Бот при открытии игры добавляет в URL
-  // параметры (user/chat/message), сервер по ним вызывает setGameScore.
-  function submitScore(s) {
-    if (!SCORE_URL) return;
-    const params = Object.fromEntries(new URLSearchParams(location.search));
+  // Отправка очков в Telegram через функцию Supabase.
+  // Бот при нажатии «Играть» добавляет в URL игры параметры:
+  // u — id игрока, i — inline-сообщение (или c + m — чат и сообщение),
+  // s — подпись, которая защищает от подделки очков.
+  function submitScore(sc) {
+    const q = new URLSearchParams(location.search);
+    if (!SCORE_URL || !q.get('s') || sc <= 0) return; // открыто не из Telegram
     fetch(SCORE_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ score: s, params, hash: location.hash })
+      body: JSON.stringify({
+        u: q.get('u'),
+        i: q.get('i'),
+        c: q.get('c'),
+        m: q.get('m'),
+        s: q.get('s'),
+        score: sc
+      })
     }).catch(() => {});
   }
 
